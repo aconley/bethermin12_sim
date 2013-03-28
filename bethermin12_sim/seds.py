@@ -100,14 +100,14 @@ class sed_model:
         for idx in range(len(self._msumean)):
             self._msinterp.append(interp1d(self._mslam, self._msseds[idx,:]))
 
-    def get_sed(self, z, U, is_starburst):
-        """ Gets the combined SED"""
+    def get_sed(self, z, U, is_starburst, log10lir=1.0):
+        """ Gets the combined SED in erg/s/cm^2/Hz"""
 
         zval = float(z)
         if zval > self._zmax or zval < self._zmin:
             raise ValueError("z out of supported range: %f" % zval)
         opz = 1.0 + zval        
-        ldfac = np.exp(self._dlfac(np.log(opz)))
+        ldfac = 10**log10lir * np.exp(self._dlfac(np.log(opz)))
 
         if is_starburst:
             if U < self._sbrange[0] or U > self._sbrange[-1]:
@@ -130,15 +130,16 @@ class sed_model:
         wt1 = 1.0 - wt2
         return wt1 * seds[idx,:] + wt2 * seds[idx+1,:]
 
-    def get_fluxes(self, wave, z, U, is_starburst):
+    def get_fluxes(self, wave, z, U, is_starburst, log10lir=0.0):
         """ Gets the flux density at the observer frame wavelengths wave
-        in Jy"""
+        in Jy for a source with a given log10 L_IR"""
 
         zval = float(z)
         if zval > self._zmax or zval < self._zmin:
             raise ValueError("z out of supported range: %f" % zval)
         opz = 1.0 + zval
-        ldfac = 1e23 * np.exp(self._dlfac(np.log(opz))) # 1e23 to Jy
+        ldfac = 10**(log10lir + 23.0) * \
+            np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
 
         if is_starburst:
             if U < self._sbrange[0] or U > self._sbrange[-1]:
