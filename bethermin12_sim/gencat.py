@@ -5,8 +5,9 @@ import math
 
 __all__ = ["gencat"]
 
-from schecter import mass_schecter
-from zdist import zdist
+from .schecter import mass_schecter
+from .zdist import zdist
+from .seds import sed_model
 
 class gencat:
     """ Generates catalog sources from Bethermin et al. 2012 model"""
@@ -32,8 +33,18 @@ class gencat:
                  gammams: 'Redshift evolution of sSFR'=3.0,
                  bsb: 'Boost if sSFR for starbursts, in dex'=0.6,
                  sigmams: 'Width of MS log-normal distribution'=0.15,
-                 sigmasb: 'Width of SB log-normal distribution'=0.2):
+                 sigmasb: 'Width of SB log-normal distribution'=0.2,
+                 mnU_MS0: '<U>_{MS,0}'=4.0, 
+                 gammaU_MS0: 'gamma_{MS,0}'=1.3,
+                 z_UMS: 'z_{<U>MS}'=2.0,
+                 mnU_SB0: '<U>_{MS,0}'=35.0, 
+                 gammaU_SB0: 'gamma_{MS,0}'=0.4,
+                 z_USB: 'z_{<U>SB}'=3.1,
+                 scatU: 'Scatter in U in dex'=0.2,
+                 ninterpdl: 'Number of interpolation points in dl'=100):
 
+        self._zmin = float(zmin)
+        self._zmax = float(zmax)
         self._rsb0 = float(rsb0)
         self._gammasb = float(gammasb)
         self._zsb = float(zsb)
@@ -45,10 +56,31 @@ class gencat:
         self._bsb = float(bsb)
         self._sigmams = float(sigmams)
         self._sigmasb = float(sigmasb)
+        self._scatU = float(scatU)
+        self._mnUMS = float(mnU_MS0)
+        self._gammaUMS = float(gammaU_MS0)
+        self._zUMS = float(z_UMS)
+        self._mnUSB = float(mnU_SB0)
+        self._gammaUSB = float(gammaU_SB0)
+        self._zUSB = float(z_USB)
+        self._Om0 = float(Om0)
+        self._H0 = float(H0)
+
+        if self._mnUMS <= 0:
+            raise ValueError("mnU_MS0 must be positive, not %f" % self._mnUMS)
+        if self._zUMS < 0:
+            raise ValueError("z_UMS must be non-negative, not %f" % self._zUMS)
+        if self._mnUSB <= 0:
+            raise ValueError("mnU_SB0 must be positive, not %f" % self._mnUSB)
+        if self._zUSB < 0:
+            raise ValueError("z_USB must be non-negative, not %f" % self._zUSB)
 
         self._sch = mass_schecter(log10Mb, alpha, log10Mmin, log10Mmax,
                                   ninterpm)
-        self._zdist = zdist(zmin, zmax, Om0, H0, phib0, gamma_sfmf, ninterpz)
+        self._zdist = zdist(self._zmin, self._zmax, self._Om0, self._H0, 
+                            phib0, gamma_sfmf, ninterpz)
+        self._ms = sed_model(zmin=self._zmin, zmax=self._zmax, Om0=self._Om0,
+                             H0=self._H0, ninterp=ninterpdl)
 
         # Set number per sr
         self._npersr = self._zdist.dVdzdOmega * self._sch.dNdV
@@ -57,11 +89,12 @@ class gencat:
     def npersr(self):
         return self._npersr
 
-    def random(self, ngen):
+    def random(self, ngen, wave=None):
         """ Generates samples from the Bethermin 2012 model.
 
         Returns a tuple of (z, log10 M, is_starburst, log10 sSFR),
-        each of which is a ngen element ndarray."""
+        each of which is a ngen element ndarray.  If wave is
+        not None, will also generate flux densities for each source."""
 
         log10mass = self._sch.random(ngen)
         z = self._zdist.random(ngen)
@@ -104,7 +137,55 @@ class gencat:
         del sigmas
         del w
 
-        return (z, log10mass, is_starburst, log10sSFR)
+        if not wave is None:
+            nwave = len(wave)
+            fluxes = np.empty((ngen, nwave), dtype=np.float32)
+            kfac = math.log10(1.7e-10) # Kennicutt '98 conversion
+
+            # Get log10 lir
+            pow_r1500 = 10**(4.07 * log10mass - 39.32)
+            fsf = pow_r1500 / (1.0 + pow_r1500)
+            log10lir = (log10mass + log10sSFR - kfac + \
+                            np.log10(fsf)).astype(np.float32)
+
+            # Do starbursts
+            wsb = np.nonzero(is_starburst)[0]
+            nsb = len(wsb)
+            if nsb > 0:
+                # Get the U (mean radiation field)
+                u = 1.0 + z[wsb]
+                np.copyto(u, self._zUSB, where=u > 1.0+self._zUSB)
+                u **= self._gammaUSB
+                # Add scatter to U
+                if self._scatU > 0.0:
+                    u *= numpy.random.lognormal(sigma=self._scatU, size=(nsb))
+                    
+                for idx in range(nsb):
+                    cidx = wsb[idx]
+                    fluxes[cidx,:] =\
+                        self._ms.get_fluxes(wave, z[cidx], u[idx], True,
+                                            log10lir=log10lir[cidx])
+            del wsb
+
+            # Do MS
+            wms = np.nonzero(not is_starburst)[0]
+            nms = len(wms)
+            if nms > 0:
+                u = 1.0 + z[wms]
+                np.copyto(u, self._zUMS, where=u > 1.0+self._zUMS)
+                u **= self._gammaUMS
+                if self._scatU > 0.0:
+                    u *= numpy.random.lognormal(sigma=self._scatU, size=(nsb))
+                    
+                for idx in range(nms):
+                    cidx = wms[idx]
+                    fluxes[cidx,:] =\
+                        self._ms.get_fluxes(wave, z[cidx], u[idx], False,
+                                            log10lir=log10lir[cidx])
+            del wms
+            return (z, log10mass, is_starburst, log10sSFR, log10lir, fluxes)
+        else:
+            return (z, log10mass, is_starburst, log10sSFR)
 
         
         

@@ -14,7 +14,6 @@ class sed_model:
                  mnU_SB0: '<U>_{MS,0}'=35.0, 
                  gammaU_SB0: 'gamma_{MS,0}'=0.4,
                  z_USB: 'z_{<U>SB}'=3.1,
-                 scatU: '<U> scatter in dex'=0.2,
                  Om0: 'Omega0' = 0.315,
                  H0: 'H0 [km/s/Mpc]'=67.7,
                  zmin: 'Minimum z supported'=0.5,
@@ -32,7 +31,6 @@ class sed_model:
         self._mnSB = float(mnU_SB0)
         self._gammaSB = float(gammaU_SB0)
         self._zSB = float(z_USB)
-        self._scatU = float(scatU)
         self._zmin = float(zmin)
         self._zmax = float(zmax)
         self._Om0 = float(Om0)
@@ -47,8 +45,6 @@ class sed_model:
             raise ValueError("mnU_SB0 must be positive, not %f" % self._mnSB)
         if self._zSB < 0:
             raise ValueError("z_USB must be non-negative, not %f" % self._zSB)
-        if self._scatU < 0:
-            raise ValueError("scatU must be non-negative, not %f" % self._scatU)
         if self._zmin == self._zmax:
             raise ValueError("No range between zmin and zmax")
         if self._zmin > self._zmax:

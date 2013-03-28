@@ -12,7 +12,7 @@ setup(
     author="Alexander Conley",
     author_email="alexander.conley@colorado.edu",
     packages=["bethermin12_sim"],
-    package_data={'bethermin12_sim':'resources/*fits'},
+    package_data={'bethermin12_sim':['resources/*fits']},
     license="GPL",
     description="Simulations of Bethermin et al. 2012 model",
     classifiers=[
