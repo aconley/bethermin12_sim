@@ -1,3 +1,6 @@
 from .schecter import *
 from .zdist import *
-__version__ = "0.1.0"
+from .getcat import *
+from .seds import *
+
+__version__ = "0.1.1"

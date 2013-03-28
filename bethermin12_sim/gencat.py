@@ -58,7 +58,10 @@ class gencat:
         return self._npersr
 
     def random(self, ngen):
-        """ Generates samples from the Bethermin 2012 model"""
+        """ Generates samples from the Bethermin 2012 model.
+
+        Returns a tuple of (z, log10 M, is_starburst, log10 sSFR),
+        each of which is a ngen element ndarray."""
 
         log10mass = self._sch.random(ngen)
         z = self._zdist.random(ngen)

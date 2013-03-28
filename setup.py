@@ -8,10 +8,11 @@ if (major < 2) or (major == 2 and minor1 < 7):
 
 setup(
     name="bethermin12_sim",
-    version="0.1.0",
+    version="0.1.1",
     author="Alexander Conley",
     author_email="alexander.conley@colorado.edu",
     packages=["bethermin12_sim"],
+    package_data={'bethermin12_sim':'resources/*fits'},
     license="GPL",
     description="Simulations of Bethermin et al. 2012 model",
     classifiers=[
