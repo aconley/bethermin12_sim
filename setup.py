@@ -3,8 +3,8 @@ from distutils.core import setup
 import sys
 major, minor1, minor2, release, serial = sys.version_info
 
-if (major < 2) or (major == 2 and minor1 < 7):
-    raise SystemExit("bethermin12_sim requires Python 2.7 or later")
+if (major < 3):
+    raise SystemExit("bethermin12_sim requires Python 3.0 or later")
 
 setup(
     name="bethermin12_sim",

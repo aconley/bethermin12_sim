@@ -106,7 +106,7 @@ class gencat:
             rsb[w] = (1.0 + z[w])**self._gammasb
         rsb *= self._rsb0
         is_starburst = np.zeros(ngen, dtype=np.uint8)
-        w = np.nonzero(np.random.rand(ngen) <= rsb / (1.0 + rsb))[0]
+        w = np.nonzero(np.random.rand(ngen) < rsb/(rsb + 1.0))[0]
         if len(w) > 0:
             is_starburst[w] = 1
         del rsb
@@ -156,9 +156,10 @@ class gencat:
                 u = 1.0 + z[wsb]
                 np.copyto(u, self._zUSB, where=u > 1.0+self._zUSB)
                 u **= self._gammaUSB
+                u *= self._mnUSB
                 # Add scatter to U
                 if self._scatU > 0.0:
-                    u *= numpy.random.lognormal(sigma=self._scatU, size=(nsb))
+                    u *= np.random.lognormal(sigma=self._scatU, size=(nsb))
                     
                 for idx in range(nsb):
                     cidx = wsb[idx]
@@ -168,14 +169,15 @@ class gencat:
             del wsb
 
             # Do MS
-            wms = np.nonzero(not is_starburst)[0]
+            wms = np.nonzero(~is_starburst)[0] # ~ is bitwise negation
             nms = len(wms)
             if nms > 0:
                 u = 1.0 + z[wms]
                 np.copyto(u, self._zUMS, where=u > 1.0+self._zUMS)
                 u **= self._gammaUMS
+                u *= self._mnUSB
                 if self._scatU > 0.0:
-                    u *= numpy.random.lognormal(sigma=self._scatU, size=(nsb))
+                    u *= np.random.lognormal(sigma=self._scatU, size=(nms))
                     
                 for idx in range(nms):
                     cidx = wms[idx]

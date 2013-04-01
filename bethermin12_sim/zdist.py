@@ -69,7 +69,7 @@ class zdist:
         cumsum = comb.cumsum()
         cumsum -= cumsum[0] # So that 0 corresponds to the bottom
         cumsum /= cumsum[-1] # Normalization -> 0-1 is full range
-        self._interpolant = interp1d(cumsum, zvals, kind='cubic')
+        self._interpolant = interp1d(cumsum, zvals, kind='linear')
 
     def random(self, ngen: 'Number of samples to generate'):
         """ Generates z samples from redshift distribution"""

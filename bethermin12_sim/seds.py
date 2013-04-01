@@ -8,13 +8,7 @@ __all__ = ["sed_model"]
 class sed_model:
     """ Gets SEDs and fluxes from Magdis template models"""
 
-    def __init__(self, mnU_MS0: '<U>_{MS,0}'=4.0, 
-                 gammaU_MS0: 'gamma_{MS,0}'=1.3,
-                 z_UMS: 'z_{<U>MS}'=2.0,
-                 mnU_SB0: '<U>_{MS,0}'=35.0, 
-                 gammaU_SB0: 'gamma_{MS,0}'=0.4,
-                 z_USB: 'z_{<U>SB}'=3.1,
-                 Om0: 'Omega0' = 0.315,
+    def __init__(self, Om0: 'Omega0' = 0.315,
                  H0: 'H0 [km/s/Mpc]'=67.7,
                  zmin: 'Minimum z supported'=0.5,
                  zmax: 'Maximum z supported'=7.0,
@@ -25,26 +19,13 @@ class sed_model:
         from pkg_resources import resource_filename
         from scipy.interpolate import interp1d
 
-        self._mnMS = float(mnU_MS0)
-        self._gammaMS = float(gammaU_MS0)
-        self._zMS = float(z_UMS)
-        self._mnSB = float(mnU_SB0)
-        self._gammaSB = float(gammaU_SB0)
-        self._zSB = float(z_USB)
         self._zmin = float(zmin)
         self._zmax = float(zmax)
         self._Om0 = float(Om0)
         self._H0 = float(H0)
         self._ninterp = int(ninterp)
         
-        if self._mnMS <= 0:
-            raise ValueError("mnU_MS0 must be positive, not %f" % self._mnMS)
-        if self._zMS < 0:
-            raise ValueError("z_UMS must be non-negative, not %f" % self._zMS)
-        if self._mnSB <= 0:
-            raise ValueError("mnU_SB0 must be positive, not %f" % self._mnSB)
-        if self._zSB < 0:
-            raise ValueError("z_USB must be non-negative, not %f" % self._zSB)
+
         if self._zmin == self._zmax:
             raise ValueError("No range between zmin and zmax")
         if self._zmin > self._zmax:
@@ -106,25 +87,22 @@ class sed_model:
         ldfac = 10**log10lir * np.exp(self._dlfac(np.log(opz)))
 
         if is_starburst:
-            if U < self._sbrange[0] or U > self._sbrange[-1]:
-                raise ValueError("Out of range <U>: %f" % U)
             return (self._sblam/opz, 
                     ldfac * self._intsed1(U, self._sbumean, self._sbseds))
         else:
-            if U < self._msrange[0] or U > self._msrange[-1]:
-                raise ValueError("Out of range <U>: %f" % U)
             return (self._mslam/opz, 
                     ldfac * self._intsed1(U, self._msumean, self._msseds))
 
     def _intsed1(self, U, uarr, seds):
         # uarr[idx] <= U < uarr[idx+1]
         idx = np.searchsorted(uarr, U, side='right') 
-        if idx == len(uarr):
-            # U = uarr[-1]
+        if idx == 0:
+            return seds[0, :]
+        elif idx == len(uarr):
             return seds[-1,:]
-        wt2 = (U - uarr[idx])/(uarr[idx+1] - uarr[idx])
+        wt2 = (U - uarr[idx-1])/(uarr[idx] - uarr[idx-1])
         wt1 = 1.0 - wt2
-        return wt1 * seds[idx,:] + wt2 * seds[idx+1,:]
+        return wt1 * seds[idx-1,:] + wt2 * seds[idx,:]
 
     def get_fluxes(self, wave, z, U, is_starburst, log10lir=0.0):
         """ Gets the flux density at the observer frame wavelengths wave
@@ -138,22 +116,19 @@ class sed_model:
             np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
 
         if is_starburst:
-            if U < self._sbrange[0] or U > self._sbrange[-1]:
-                raise ValueError("Out of range <U>: %f" % U)
             return  ldfac * self._intsed2(np.asarray(wave)/opz, U, 
                                           self._sbumean, self._sbinterp)
         else:
-            if U < self._msrange[0] or U > self._msrange[-1]:
-                raise ValueError("Out of range <U>: %f" % U)
             return  ldfac * self._intsed2(np.asarray(wave)/opz, U, 
                                           self._msumean, self._msinterp)
         
     def _intsed2(self, wave, U, uarr, seds):
         # uarr[idx] <= U < uarr[idx+1]
         idx = np.searchsorted(uarr, U, side='right') 
-        if idx == len(uarr):
-            # U = uarr[-1]
-            return seds[idx](wave)
-        wt2 = (U - uarr[idx])/(uarr[idx+1] - uarr[idx])
+        if idx == 0:
+            return seds[0](wave)
+        elif idx == len(uarr):
+            return seds[idx-1](wave)
+        wt2 = (U - uarr[idx-1])/(uarr[idx] - uarr[idx-1])
         wt1 = 1.0 - wt2
-        return wt1 * seds[idx](wave) + wt2 * seds[idx](wave)
+        return wt1 * seds[idx-1](wave) + wt2 * seds[idx](wave)
