@@ -142,11 +142,9 @@ class gencat:
             fluxes = np.empty((ngen, nwave), dtype=np.float32)
             kfac = math.log10(1.7e-10) # Kennicutt '98 conversion
 
-            # Get log10 lir
-            pow_r1500 = 10**(4.07 * log10mass - 39.32)
-            fsf = pow_r1500 / (1.0 + pow_r1500)
-            log10lir = (log10mass + log10sSFR - kfac + \
-                            np.log10(fsf)).astype(np.float32)
+            # Get log10 lir; note I'm assuming the r1500 business
+            # only applies to SBs, not MSs
+            log10lir = (log10mass + log10sSFR - kfac).astype(np.float32)
 
             # Do starbursts
             wsb = np.nonzero(is_starburst)[0]
@@ -161,6 +159,12 @@ class gencat:
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatU, size=(nsb))
                     
+                # Deal with extinction effects on L_IR
+                # coeff values are from eq 7 of B12 * 0.4 (from eq 8)
+                pow_r1500 = 10**(1.628 * log10mass[wsb] - 15.728)
+                fsf = pow_r1500 / (1.0 + pow_r1500)
+                log10lir[wsb] += np.log10(fsf).astype(np.float32)
+
                 for idx in range(nsb):
                     cidx = wsb[idx]
                     fluxes[cidx,:] =\
