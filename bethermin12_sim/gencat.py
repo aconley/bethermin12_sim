@@ -56,7 +56,8 @@ class gencat:
         self._bsb = float(bsb)
         self._sigmams = float(sigmams)
         self._sigmasb = float(sigmasb)
-        self._scatU = float(scatU)
+        self._scatU = float(scatU) #dex
+        self._scatUe = math.log(10.0) * self._scatU #param for lognormal
         self._mnUMS = float(mnU_MS0)
         self._gammaUMS = float(gammaU_MS0)
         self._zUMS = float(z_UMS)
@@ -157,7 +158,7 @@ class gencat:
                 u *= self._mnUSB
                 # Add scatter to U
                 if self._scatU > 0.0:
-                    u *= np.random.lognormal(sigma=self._scatU, size=(nsb))
+                    u *= np.random.lognormal(sigma=self._scatUe, size=(nsb))
                     
                 # Deal with extinction effects on L_IR
                 # coeff values are from eq 7 of B12 * 0.4 (from eq 8)
@@ -181,7 +182,7 @@ class gencat:
                 u **= self._gammaUMS
                 u *= self._mnUSB
                 if self._scatU > 0.0:
-                    u *= np.random.lognormal(sigma=self._scatU, size=(nms))
+                    u *= np.random.lognormal(sigma=self._scatUe, size=(nms))
                     
                 for idx in range(nms):
                     cidx = wms[idx]
