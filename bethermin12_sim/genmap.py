@@ -57,11 +57,11 @@ class genmap:
                  bmoversamp: "Beam oversampling"=5,
                  log10Mb: 'log 10 of Mb, in solar masses'=11.2,
                  alpha: 'power-law slope of low mass end'=1.3,
-                 log10Mmin: 'log10 minimum mass, in solar masses'=9.5,
+                 log10Mmin: 'log10 minimum mass, in solar masses'=8.5,
                  log10Mmax: 'log10 maximum mass, in solar masses'=12.75,
                  ninterpm: 'Number of mass interplation samples to use'=2000,
-                 zmin:'Minimum z generated'=0.5,
-                 zmax: 'Maximum z generated'=7.0,
+                 zmin:'Minimum z generated'=0.1,
+                 zmax: 'Maximum z generated'=10.0,
                  Om0: 'Density parameter of ordinary matter'=0.315,
                  H0: 'Hubble constant in km/sec/Mpc'=67.7,
                  phib0: 'log10 number density at SFMF break'=-3.02,
@@ -84,7 +84,7 @@ class genmap:
                  gammaU_SB0: 'gamma_{MS,0}'=0.4,
                  z_USB: 'z_{<U>SB}'=3.1,
                  scatU: 'Scatter in U in dex'=0.2,
-                 ninterpdl: 'Number of interpolation points in dl'=100):
+                 ninterpdl: 'Number of interpolation points in dl'=200):
         
         self._wave = np.asarray(wave, dtype=np.float32)
         if self._wave.min() <= 0:

@@ -42,34 +42,34 @@ class zdist:
         self._phib0 = float(phib0)
         self._gamma_sfmf = float(gamma_sfmf)
 
-        zvals = np.linspace(self._zmin, self._zmax, self._ninterp)
+        self._zvals = np.linspace(self._zmin, self._zmax, self._ninterp)
 
         # Cosmology bit
         c_over_H0 = 299792.458 / self._H0 # in Mpc
-        cos = FlatLambdaCDM(H0=self._H0, Om0=self._Om0, Tcmb0=0.0,
-                            Neff=0.0)
+        cos = FlatLambdaCDM(H0=self._H0, Om0=self._Om0)
+
         # in comoving Mpc^3
-        dvdzdomega = c_over_H0 * (1.0 + zvals)**2 *\
-            cos.angular_diameter_distance(zvals)**2 /\
-            np.sqrt((1.0 + zvals)**3 * self._Om0 - (1.0 - self._Om0))
+        self._dVdzdOmega = c_over_H0 * (1.0 + self._zvals)**2 *\
+            cos.angular_diameter_distance(self._zvals)**2 /\
+            np.sqrt((1.0 + self._zvals)**3 * self._Om0 + (1.0 - self._Om0))
         
         # Schecter evolution bit
         phi = self._phib0 * np.ones(self._ninterp, dtype=np.float64)
-        wgt1 = np.nonzero(zvals > 1.0)[0]
+        wgt1 = np.nonzero(self._zvals > 1.0)[0]
         if len(wgt1) > 0:
-            phi[wgt1] += self._gamma_sfmf * (1.0 - zvals[wgt1])
+            phi[wgt1] += self._gamma_sfmf * (1.0 - self._zvals[wgt1])
         
         # Combined
-        comb = 10**phi * dvdzdomega
+        comb = 10**phi * self._dVdzdOmega
 
         # Needed to understand normalization
-        self._dVdzdOmega = trapz(comb, x=zvals)
+        self._dVPhidzdOmega = trapz(comb, x=self._zvals)
 
         # Form inverse cumulative array needed to generate samples
         cumsum = comb.cumsum()
         cumsum -= cumsum[0] # So that 0 corresponds to the bottom
         cumsum /= cumsum[-1] # Normalization -> 0-1 is full range
-        self._interpolant = interp1d(cumsum, zvals, kind='linear')
+        self._interpolant = interp1d(cumsum, self._zvals, kind='linear')
 
     def random(self, ngen: 'Number of samples to generate'):
         """ Generates z samples from redshift distribution"""
@@ -82,6 +82,11 @@ class zdist:
     @property
     def zmax(self):
         return self._zmax
+
+    @property
+    def zvals(self):
+        """ Tabulated redshift values"""
+        return self._zvals
 
     @property
     def Om0(self):
@@ -101,5 +106,10 @@ class zdist:
 
     @property
     def dVdzdOmega(self):
-        """ This is actually dV / dz dOmega * phi(b)"""
+        """ Comoving volume in Mpc^3 per redshift per sr at zvals"""
         return self._dVdzdOmega
+
+    @property
+    def dVPhidzdOmega(self):
+        """ Comoving volume in Mpc^3 per redshift per sr at zvals * phi_b(z)"""
+        return self._dVPhidzdOmega
