@@ -11,13 +11,35 @@ __all__ = ["zdist"]
 class zdist:
     """ Volume element and z distribution"""
 
-    def __init__(self, zmin:'Minimum z generated'=0.5,
-                 zmax: 'Maximum z generated'=7.0,
-                 Om0: 'Density parameter of ordinary matter'=0.315,
-                 H0: 'Hubble constant in km/sec/Mpc'=67.7,
-                 phib0: 'log10 number density at SFMF break'=-3.02,
-                 gamma_sfmf: 'Evolution of density of SFMF at z>1'=0.4,
-                 ninterp: 'Number of interpolation samples to use'=1000):
+    def __init__(self, zmin=0.5, zmax=7.0, Om0=0.315, H0=67.7, phib0=-3.02,
+                 gamma_sfmf=0.4, ninterp=1000):
+        """ Initializer.
+
+        Parameters
+        ----------
+        zmin : float
+          Minimum redshift
+        
+        zmax: float
+          Maximum redshift
+
+        Om0: float
+          Matter density parameter
+
+        H0: float
+          Hubble constant in km / s / Mpc
+   
+        phib0: float
+          log 10 number density at SFMF break in comoving Mpc^-3
+
+        gamma_sfmf: float
+          Evolution of the number density of the SFMF at z > 1
+
+        ninterp: int
+          Number of interpolation samples to use
+
+        """
+
         from scipy.interpolate import interp1d
         from scipy.integrate import trapz
         from astropy.cosmology import FlatLambdaCDM
@@ -71,8 +93,20 @@ class zdist:
         cumsum /= cumsum[-1] # Normalization -> 0-1 is full range
         self._interpolant = interp1d(cumsum, self._zvals, kind='linear')
 
-    def random(self, ngen: 'Number of samples to generate'):
-        """ Generates z samples from redshift distribution"""
+    def generate(self, ngen: 'Number of samples to generate'):
+        """ Generates z samples from redshift distribution.
+
+        Parameters
+        ----------
+        ngen: int
+          Number of samples to generate.
+
+        Returns
+        -------
+        z: ndarray
+          Redshifts
+        """
+
         return self._interpolant(np.random.rand(ngen)).astype(np.float32)
 
     @property

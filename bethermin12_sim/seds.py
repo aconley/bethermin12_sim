@@ -8,11 +8,29 @@ __all__ = ["sed_model"]
 class sed_model:
     """ Gets SEDs and fluxes from Magdis template models"""
 
-    def __init__(self, Om0: 'Omega0' = 0.315,
-                 H0: 'H0 [km/s/Mpc]'=67.7,
-                 zmin: 'Minimum z supported'=0.5,
-                 zmax: 'Maximum z supported'=7.0,
-                 ninterp: 'Interplation points for luminosity distance'=100):
+    def __init__(self, Om0=0.315, H0=67.7, zmin=0.5,
+                 zmax=7.0, ninterp=100):
+        """ Initializer
+
+        Parameters
+        ----------
+        Om0: float
+          Matter density parameter
+
+        H0: float
+          Hubble constant, in km / s / Mpc
+
+        zmin: float
+          Minimum redshift supported.
+
+        zmax: float
+          Maximum redshift supported.
+
+        ninterp: int
+          Number of interpolation points for luminosity distance.
+
+        """
+
 
         from astropy.cosmology import FlatLambdaCDM
         import astropy.io.fits as fits

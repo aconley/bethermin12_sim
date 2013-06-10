@@ -13,11 +13,29 @@ class mass_schecter:
     term in the Bethermin 12 model.
     """
 
-    def __init__(self, log10Mb: 'log 10 of Mb, in solar masses'=11.2,
-                 alpha: 'power-law slope of low mass end'=1.3,
-                 log10Mmin: 'log10 minimum mass, in solar masses'=9.0,
-                 log10Mmax: 'log10 maximum mass, in solar masses'=13.0,
-                 ninterp: 'Number of interplation samples to use'=2000):
+    def __init__(self, log10Mb=11.2, alpha=1.3, log10Mmin=9.0, log10Mmax=13.0,
+                 ninterp=2000):
+        """ Initializer.
+
+        Parameters
+        ----------
+        log10Mb: float
+          Log10 of Mb, in solar masses
+
+        alpha: float
+          Power-law slope of low mass distribution
+ 
+        log10Mmin: float
+          Log10 minimum mass to generate, in solar masses
+
+        log10Mmax: float
+          Log10 maximum mass to generate, in solar masses
+
+        ninterp: float
+          Number of interpolation samples to use
+        """
+
+
         from scipy.interpolate import interp1d
         from scipy.integrate import trapz
 
@@ -49,13 +67,32 @@ class mass_schecter:
         cumsum /= cumsum[-1] # Normalization -> 0-1 is full range
         self._interpolant = interp1d(cumsum, logM, kind='linear')
 
-    def __call__(self, log10M: "log 10 mass, in solar masses"):
-        """ Evaluate the schechter function"""
+    def __call__(self, log10M):
+        """ Evaluate the schechter function
+
+        Parameters
+        ----------
+        log10M: float
+          log10 mass to evaluate Schecter function at, in solar masses
+        """
+
         v = 10**(log10M - self._Mb)
         return math.log(10.0) * v**(1 - self._alpha) * np.exp(-v)
 
-    def random(self, ngen: 'Number of samples to generate'):
-        """ Generates log10 M samples from Schecter function"""
+    def generate(self, ngen):
+        """ Generates log10 M samples from Schecter function.
+
+        Parameters
+        ----------
+        ngen: int
+          Number of samples to generate
+
+        Returns
+        --------
+        log10M: ndarray
+          Log 10 mass values, in solar masses.
+        """
+
         return self._interpolant(np.random.rand(ngen)).astype(np.float32)
 
     @property
