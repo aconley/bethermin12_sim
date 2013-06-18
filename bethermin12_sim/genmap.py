@@ -208,31 +208,43 @@ class genmap_gauss:
           Number of interpolation points in the luminosity distance.
         """
 
+        from numbers import Number
 
-        self._wave = np.asarray(wave, dtype=np.float32)
+        if isinstance(wave, Number):
+            self._wave = np.asarray([wave], dtype=np.float32)
+        else:
+            self._wave = np.asarray(wave, dtype=np.float32)
         if self._wave.min() <= 0:
             raise ValueError("Non-positive wavelengths not supported")
         self._nbands = len(self._wave)
         
-        if len(pixsize) != self._nbands:
-            if len(pixsize) == 1:
-                self._pixsize = np.asarray(pixsize[0], dtype=np.float32) *\
-                    np.ones_like(self._wave)
-            else:
-                raise ValueError("Number of pixel sizes doesn't match number of wavelengths")
+        if isinstance(pixsize, Number):
+            self._pixsize = pixsize * np.ones_like(self._wave, dtype=np.float32)
         else:
-            self._pixsize=  np.asarray(pixsize, dtype=np.float32)
+            if len(pixsize) != self._nbands:
+                if len(pixsize) == 1:
+                    self._pixsize = np.asarray(pixsize[0], dtype=np.float32) *\
+                        np.ones_like(self._wave)
+                else:
+                    raise ValueError("Number of pixel sizes doesn't "
+                                     "match number of wavelengths")
+            else:
+                self._pixsize=  np.asarray(pixsize, dtype=np.float32)
         if self._pixsize.min() <= 0:
             raise ValueError("Invalid (negative) pixel size")
 
-        if len(fwhm) != self._nbands:
-            if len(fwhm) == 1:
-                self._fwhm = np.asarray(fwhm[0], dtype=np.float32) *\
-                    np.ones_like(self._wave)
-            else:
-                raise ValueError("Number of FWHM doesn't match number of wavelengths")
+        if isinstance(fwhm, Number):
+            self._fwhm =  fwhm * np.ones_like(self._wave)
         else:
-            self._fwhm=  np.asarray(fwhm, dtype=np.float32)
+            if len(fwhm) != self._nbands:
+                if len(fwhm) == 1:
+                    self._fwhm = np.asarray(fwhm[0], dtype=np.float32) *\
+                        np.ones_like(self._wave)
+                else:
+                    raise ValueError("Number of FWHM doesn't match number "
+                                     "of wavelengths")
+            else:
+                self._fwhm=  np.asarray(fwhm, dtype=np.float32)
         if self._fwhm.min() <= 0:
             raise ValueError("Invalid (negative) FWHM")
         if (self._fwhm / self._pixsize).min() < 1:
