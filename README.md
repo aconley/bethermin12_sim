@@ -30,8 +30,8 @@ Further information is available through the usual python help mechanism.
 
 ### Dependencies
 This depends on a number of python packages:
-* [numpy](http://numpy.scipy.org/)
-* [scipy](http://numpy.scipy.org/)
+* [numpy](http://www.numpy.org/)
+* [scipy](http://www.scipy.org/)
 * [astropy](http://www.astropy.org/)
 
 ### References

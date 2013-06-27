@@ -12,7 +12,6 @@ from astropy.nddata.convolution.make_kernel import make_kernel
 __all__ = ["genmap_gauss", "get_gauss_beam"]
 
 from .gencat import gencat
-from .smap_struct import smap_map
 
 def get_gauss_beam(fwhm, pixscale, nfwhm=5.0, oversamp=1):
     """ Generate Gaussian kernel
@@ -482,80 +481,3 @@ class genmap_gauss:
 
         return maps
 
-    def generate_smap(self, area, racen=25.0, deccen=0.0, 
-                      sigma=None, verbose=False):
-        """ Generates simulated maps as SMAP structures.
-
-        Parameters
-        ----------
-        area: float
-          Area of generated maps, in deg^2
-
-        racen: float
-          Right ascension of generated maps
-          
-        deccen: float
-          Declination of generated maps
-
-        sigma: ndarray or None
-          Map instrument noise, in Jy.  If None, no instrument
-          noise is added.
-
-        verbose: bool
-          Print informational messages as it runs.
-
-        Returns
-        -------
-          A tuple containing the input maps.  If truthtable is
-        set on initialization, also includes the truth table of
-        positions and fluxes, where the positions are relative
-        to the first map.
-        """
-
-        maps = self.generate(area, sigma=sigma, verbose=verbose)
-        
-        nmaps = len(maps)
-        if self._returntruth:
-            nmaps -= 1 # Truth table
-
-        # Figure out sigma situation
-        if sigma is None:
-            has_sigma = False
-        elif type(sigma) == list:
-            if len(sigma) != self._nbands:
-                if len(sigma) == 1:
-                    int_sigma = sigma[0] * np.ones_like(self._wave)
-                else:
-                    raise ValueError("Number of sigmas doesn't match number"
-                                     " of wavelengths")
-            else:
-                int_sigma = np.asarray(sigma, dtype=np.float32)
-            has_sigma = True
-        elif type(sigma) == np.ndarray:
-            if len(sigma) != self._nbands:
-                if len(sigma) == 1:
-                    int_sigma = sigma[0] * np.ones_like(self._wave)
-                else:
-                    raise ValueError("Number of sigmas doesn't match number"
-                                     " of wavelengths")
-            else:
-                int_sigma = sigma.astype(np.float32, copy=False)
-            has_sigma = True
-        else:
-            int_sigma=  float(sigma) * np.ones_like(self._wave)
-            has_sigma = True
-
-        for i in range(nmaps):
-            cmap = maps[i]
-            cmap -= cmap.mean()
-            if has_sigma:
-                error = int_sigma[i] * np.ones_like(cmap)
-            else:
-                error = None
-            mapstr = smap_map()
-            mapstr.create(cmap, self._pixsize[i], racen, deccen,
-                          wave=self._wave[i], error=error)
-            maps[i] = mapstr
-            del cmap
-
-        return maps
