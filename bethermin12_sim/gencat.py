@@ -12,7 +12,7 @@ from .seds import sed_model
 class gencat:
     """ Generates catalog sources from Bethermin et al. 2012 model"""
     
-    def __init__(self, log10Mb=11.2, alpha=1.3, log10Mmin=8.5, log10Mmax=12.75,
+    def __init__(self, log10Mb=11.2, alpha=1.3, log10Mmin=8.0, log10Mmax=12.75,
                  ninterpm=2000, zmin=0.1, zmax=10.0, Om0=0.315,
                  H0=67.7, phib0=-3.02, gamma_sfmf=0.4, ninterpz=1000,
                  rsb0=0.012, gammasb=1.0, zsb=1.0, logsSFRM0=-10.2,
@@ -162,12 +162,17 @@ class gencat:
     def npersr(self):
         return self._npersr
 
+    @property
+    def npersqdeg(self):
+        return self._npersr * (math.pi / 180.0)**2
+
     def generate(self, ngen, wave=None):
         """ Generates samples from the Bethermin 2012 model.
 
         Returns a tuple of (z, log10 M, is_starburst, log10 sSFR),
         each of which is a ngen element ndarray.  If wave is
-        not None, will also generate flux densities for each source."""
+        not None, will also generate flux densities (in mJy) for 
+        each source."""
 
         log10mass = self._sch.generate(ngen)
         z = self._zdist.generate(ngen)
