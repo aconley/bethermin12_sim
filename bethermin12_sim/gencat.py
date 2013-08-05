@@ -245,11 +245,8 @@ class gencat:
                 fsf = pow_r1500 / (1.0 + pow_r1500)
                 log10lir[wsb] += np.log10(fsf).astype(np.float32)
 
-                for idx in range(nsb):
-                    cidx = wsb[idx]
-                    fluxes[cidx,:] =\
-                        self._ms.get_fluxes(wave, z[cidx], u[idx], True,
-                                            log10lir=log10lir[cidx])
+                fluxes[wsb, :] = self._ms.get_fluxes(wave, z[wsb], u, True,
+                                                     log10lir=log10lir[wsb])
             del wsb
 
             # Do MS
@@ -263,12 +260,10 @@ class gencat:
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nms))
                     
-                for idx in range(nms):
-                    cidx = wms[idx]
-                    fluxes[cidx,:] =\
-                        self._ms.get_fluxes(wave, z[cidx], u[idx], False,
-                                            log10lir=log10lir[cidx])
+                fluxes[wms, :] = self._ms.get_fluxes(wave, z[wms], u, False,
+                                                     log10lir=log10lir[wms])
             del wms
+
             return (z, log10mass, is_starburst, log10sSFR, log10lir, fluxes)
         else:
             return (z, log10mass, is_starburst, log10sSFR)

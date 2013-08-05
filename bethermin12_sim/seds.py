@@ -36,6 +36,7 @@ class sed_model:
         from astropy.units import Quantity
         import astropy.io.fits as fits
         from pkg_resources import resource_filename
+        from scipy.interpolate import RectBivariateSpline as rbs
         from scipy.interpolate import interp1d
 
         self._zmin = float(zmin)
@@ -81,9 +82,8 @@ class sed_model:
         self._sbumean = self._sbumean[arg]
         self._sbrange = np.array([self._sbumean[0], self._sbumean[-1]])
         self._sbseds = dat['SEDS'][0,:,:].transpose()[arg,:] # umean by lambda
-        self._sbinterp = []
-        for idx in range(len(self._sbumean)):
-            self._sbinterp.append(interp1d(self._sblam, self._sbseds[idx,:]))
+        self._sbinterp = rbs(self._sbumean, self._sblam, self._sbseds,
+                             kx=1, ky=1)
 
         ms_tpl = resource_filename(__name__, 'resources/SED_ms.fits')
         hdu = fits.open(ms_tpl)
@@ -96,8 +96,16 @@ class sed_model:
         self._msrange = np.array([self._msumean[0],self._msumean[-1]])
         self._msseds = dat['SEDS'][0,:,:].transpose()[arg,:] # umean by lambda
         self._msinterp = []
-        for idx in range(len(self._msumean)):
-            self._msinterp.append(interp1d(self._mslam, self._msseds[idx,:]))
+        self._msinterp = rbs(self._msumean, self._mslam, self._msseds,
+                             kx=1, ky=1)
+
+    @property
+    def zmin(self):
+        return self._zmin
+
+    @property
+    def zmax(self):
+        return self._zmax
 
     def get_sed(self, z, U, is_starburst, log10lir=1.0):
         """ Gets the combined SED in erg/s/cm^2/Hz"""
@@ -128,29 +136,87 @@ class sed_model:
 
     def get_fluxes(self, wave, z, U, is_starburst, log10lir=0.0):
         """ Gets the flux density at the observer frame wavelengths wave
-        in Jy for a source with a given log10 L_IR"""
+        in Jy for a set of sources with a given log10 L_IR.  They must
+        be all starburst, or all main sequence"""
 
-        zval = float(z)
-        if zval > self._zmax or zval < self._zmin:
-            raise ValueError("z out of supported range: %f" % zval)
-        opz = 1.0 + zval
-        ldfac = 10**(log10lir + 23.0) * \
-            np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
-
-        if is_starburst:
-            return  ldfac * self._intsed2(np.asarray(wave)/opz, U, 
-                                          self._sbumean, self._sbinterp)
+        # Simple scalar case
+        if np.isscalar(z):
+            if not np.isscalar(U):
+                raise ValueError("U must be scalar if z is")
+            if not np.isscalar(log10lir):
+                raise ValueError("log10lir must be scalar if z is")
+            zval = float(z)
+            if zval > self._zmax:
+                raise ValueError("z %f above supported range: %f" %\
+                                 (zval, self._zmax))   
+            if zval < self._zmin:
+                raise ValueError("z %f below supported range: %f" %\
+                                 (zval, self._zmin))   
+            opz = 1.0 + zval
+            ldfac = 10**(log10lir + 23.0) * \
+                np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
+            
+            if is_starburst:
+                rng = self._sbrange
+                interp = self._sbinterp
+            else:
+                rng = self._msrange
+                interp = self._msinterp
+            if U < rng[0]:
+                U = rng[0]
+            elif U > rng[1]:
+                U = rng[1]
+            if np.isscalar(wave):
+                return  ldfac * interp(U, wave / opz).flatten()
+            else:
+                return ldfac * interp(U, np.asarray(wave) / opz).flatten()
         else:
-            return  ldfac * self._intsed2(np.asarray(wave)/opz, U, 
-                                          self._msumean, self._msinterp)
+            # Not so simple case
+            z = np.asarray(z)
+            nz = len(z)
+            if np.isscalar(U):
+                U = U * np.ones_like(z)
+            else:
+                U = np.asarray(U)
+                if len(U) != nz:
+                    raise ValueError("Mismatch between number of z and "
+                                     "U values")
+            if np.isscalar(log10lir):
+                log10lir = log10lir * np.ones_like(z)
+            else:
+                log10lir = np.asarray(log10lir)
+                if len(log10lir) != nz:
+                    raise ValueError("Mismatch between number of z and "
+                                     "log10lir values")
+
+            if z.max() > self._zmax:
+                raise ValueError("z %f above supported range: %f" %\
+                                 (z.max(), self._zmax))   
+            if z.min() < self._zmin:
+                raise ValueError("z %f below supported range: %f" %\
+                                 (z.min(), self._zmin))   
+            opz = 1.0 + z
+            ldfac = 10**(log10lir + 23.0) * \
+                np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
+
+            if is_starburst:
+                rng = self._sbrange
+                interp = self._sbinterp
+            else:
+                rng = self._msrange
+                interp = self._msinterp
+            np.copyto(U, rng[0], where=(U < rng[0]))
+            np.copyto(U, rng[1], where=(U > rng[1]))
+            
+            if np.isscalar(wave):
+                retarr = np.empty_like(z)
+                for idx in range(nz):
+                    retarr[idx] = ldfac[idx] *\
+                        interp(U[idx], wave / opz[idx]).flatten()
+            else:
+                retarr = np.empty((nz, len(wave)), dtype=np.float32)
+                for idx in range(nz):
+                    retarr[idx, :] = ldfac[idx] *\
+                        interp(U[idx], wave / opz[idx]).flatten()
+            return retarr
         
-    def _intsed2(self, wave, U, uarr, seds):
-        # uarr[idx] <= U < uarr[idx+1]
-        idx = np.searchsorted(uarr, U, side='right') 
-        if idx == 0:
-            return seds[0](wave)
-        elif idx == len(uarr):
-            return seds[idx-1](wave)
-        wt2 = (U - uarr[idx-1])/(uarr[idx] - uarr[idx-1])
-        wt1 = 1.0 - wt2
-        return wt1 * seds[idx-1](wave) + wt2 * seds[idx](wave)
