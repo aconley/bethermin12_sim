@@ -33,6 +33,7 @@ class sed_model:
 
 
         from astropy.cosmology import FlatLambdaCDM
+        from astropy.units import Quantity
         import astropy.io.fits as fits
         from pkg_resources import resource_filename
         from scipy.interpolate import interp1d
@@ -63,7 +64,10 @@ class sed_model:
         zrange = np.linspace(self._zmin, self._zmax, self._ninterp)
         mpc_in_cm = 3.0857e24
         prefac = 1.0 / (4 * math.pi * mpc_in_cm**2)
-        dlval = prefac * (1.0 + zrange) / cos.luminosity_distance(zrange)**2
+        lumdist = cos.luminosity_distance(zrange)
+        if isinstance(lumdist, Quantity):
+            lumdist = lumdist.value
+        dlval = prefac * (1.0 + zrange) / lumdist**2
         self._dlfac = interp1d(np.log(1 + zrange), np.log(dlval))
 
         # Read in the data products, and set up interpolations on them
@@ -105,10 +109,10 @@ class sed_model:
         ldfac = 10**log10lir * np.exp(self._dlfac(np.log(opz)))
 
         if is_starburst:
-            return (self._sblam/opz, 
+            return (self._sblam / opz, 
                     ldfac * self._intsed1(U, self._sbumean, self._sbseds))
         else:
-            return (self._mslam/opz, 
+            return (self._mslam / opz, 
                     ldfac * self._intsed1(U, self._msumean, self._msseds))
 
     def _intsed1(self, U, uarr, seds):

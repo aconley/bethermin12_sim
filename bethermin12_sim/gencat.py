@@ -238,7 +238,7 @@ class gencat:
                 # Add scatter to U
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nsb))
-                    
+                  
                 # Deal with extinction effects on L_IR
                 # coeff values are from eq 7 of B12 * 0.4 (from eq 8)
                 pow_r1500 = 10**(1.628 * log10mass[wsb] - 15.728)

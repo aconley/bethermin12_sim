@@ -43,6 +43,7 @@ class zdist:
         from scipy.interpolate import interp1d
         from scipy.integrate import trapz
         from astropy.cosmology import FlatLambdaCDM
+        from astropy.units import Quantity
 
         self._zmin = float(zmin)
         self._zmax = float(zmax)
@@ -71,9 +72,12 @@ class zdist:
         cos = FlatLambdaCDM(H0=self._H0, Om0=self._Om0)
 
         # in comoving Mpc^3
+        ang_diam_dist = cos.angular_diameter_distance(self._zvals)
+        if isinstance(ang_diam_dist, Quantity):
+            ang_diam_dist = ang_diam_dist.value
         self._dVdzdOmega = c_over_H0 * (1.0 + self._zvals)**2 *\
-            cos.angular_diameter_distance(self._zvals)**2 /\
-            np.sqrt((1.0 + self._zvals)**3 * self._Om0 + (1.0 - self._Om0))
+            ang_diam_dist**2 / np.sqrt((1.0 + self._zvals)**3 *\
+                                           self._Om0 + (1.0 - self._Om0))
         
         # Schecter evolution bit
         phi = self._phib0 * np.ones(self._ninterp, dtype=np.float64)
