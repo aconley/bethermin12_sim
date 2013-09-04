@@ -334,6 +334,11 @@ class genmap_gauss:
         set on initialization, also includes the truth table of
         positions and fluxes, where the positions are relative
         to the first map.
+
+        Notes
+        -----
+          Remember that the returned maps follow astropy.io.fits conventions,
+        so the indexing into the maps is [y, x]
         """
         
         if area <= 0.0:
@@ -438,7 +443,7 @@ class genmap_gauss:
             np.place(xf, xf > nx-1, nx-1)
             np.place(yf, yf > ny-1, ny-1)
             for cx, cy, cf in zip(xf, yf, fluxes[:,0]):
-                cmap[cx, cy] += cf
+                cmap[cy, cx] += cf # Note transpose
 
             # Other bands, with pixel scale adjustment
             for mapidx in range(1, self._nbands):
@@ -450,7 +455,7 @@ class genmap_gauss:
                 np.place(xf, xf > nx-1, nx-1)
                 np.place(yf, yf > ny-1, ny-1)
                 for cx, cy, cf in zip(xf, yf, fluxes[:,mapidx]):
-                    cmap[cx, cy] += cf
+                    cmap[cy, cx] += cf # Note transpose
                     
             if not self._returntruth:
                 del fluxes, xpos, ypos, xf, yf
