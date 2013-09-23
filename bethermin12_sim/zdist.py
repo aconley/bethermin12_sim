@@ -52,16 +52,16 @@ class zdist:
         if self._zmin > self._zmax:
             self._zmin, self._zmax = self._zmax, self._zmin
         if self._zmin < 0.0:
-            raise ValueError("zmin must be >= 0: %f" % self._zmin)
+            raise ValueError("zmin must be >= 0: {:f}".format(self._zmin))
         self._Om0 = float(Om0)
         if self._Om0 <= 0.0:
-            raise ValueError("Om0 must be positive: %f" % self._Om0)
+            raise ValueError("Om0 must be positive: {:f}".format(self._Om0))
         self._H0 = float(H0)
         if self._H0 <= 0.0:
-            raise ValueError("H0 must be positive: %f" % self._H0)
+            raise ValueError("H0 must be positive: {:f}".format(self._H0))
         self._ninterp = int(ninterp)
         if self._ninterp <= 0:
-            raise ValueError("Ninterp must be > 0: %d" % self._ninterp)
+            raise ValueError("Ninterp must be > 0: {:d}".format(self._ninterp))
         self._phib0 = float(phib0)
         self._gamma_sfmf = float(gamma_sfmf)
 
@@ -97,7 +97,7 @@ class zdist:
         cumsum /= cumsum[-1] # Normalization -> 0-1 is full range
         self._interpolant = interp1d(cumsum, self._zvals, kind='linear')
 
-    def generate(self, ngen: 'Number of samples to generate'):
+    def generate(self, ngen):
         """ Generates z samples from redshift distribution.
 
         Parameters

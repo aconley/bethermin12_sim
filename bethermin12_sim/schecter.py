@@ -42,7 +42,7 @@ class mass_schecter:
         self._Mb = float(log10Mb)
         self._alpha = float(alpha)
         if self._alpha <= 1.0:
-            raise ValueError("alpha should be > 1: %f" % self._alpha)
+            raise ValueError("alpha should be > 1: {:f}".format(self._alpha))
         self._Mmin = float(log10Mmin)
         self._Mmax = float(log10Mmax)
         if self._Mmin == self._Mmax:
@@ -51,7 +51,7 @@ class mass_schecter:
             self._Mmin, self._Mmax = self._Mmax, self._Mmin
         self._ninterp = int(ninterp)
         if self._ninterp <= 0:
-            raise ValueError("Ninterp must be > 0: %d" % self._ninterp)
+            raise ValueError("Ninterp must be > 0: {:d}".format(self._ninterp))
 
         # LogM runs from Mmax down to Mmin because the schecter function
         # drops so quickly
@@ -125,7 +125,7 @@ class mass_schecter:
 
     def __str__(self):
         """ String representation"""
-        outstr = "Schecter mass function with log10Mb: %0.2f alpha: %0.2f"\
-            " log10Mmin: %0.2f log10Mmax: %0.2f"
-        return outstr % (self._Mb, self._alpha, self._Mmin,
-                         self._Mmax)
+        outstr = "Schecter mass function with log10Mb: {0:0.2f} "\
+                 "alpha: {1:0.2f} log10Mmin: {2:0.2f} log10Mmax: {3:0.2f}"
+        return outstr.format(self._Mb, self._alpha, self._Mmin,
+                             self._Mmax)

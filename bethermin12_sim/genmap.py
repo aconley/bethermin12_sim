@@ -268,7 +268,8 @@ class genmap_gauss:
         if self._bmoversamp < 1:
             raise ValueError("Invalid (<1) beam oversampling")
         if self._bmoversamp % 2 == 0:
-            raise ValueError("Invalid (even) beam oversampling %d" % self._bmoversamp)
+            errstr = "Invalid (even) beam oversampling {:d}".format(self._bmoversamp)
+            raise ValueError(errstr)
             
         # Set up catalog generator
         self._gencat = gencat(log10Mb, alpha, log10Mmin, log10Mmax, 
@@ -390,8 +391,8 @@ class genmap_gauss:
         nsources_base = self._npersr * (math.pi / 180.0)**2 * truearea
         nsources = np.random.poisson(lam=nsources_base)
         if verbose:
-            print("True area: %0.2f [deg^2]" % truearea)
-            print("Number of sources to generate: %d" % nsources)
+            print("True area: {:0.2f} [deg^2]".format(truearea))
+            print("Number of sources to generate: {:d}".format(nsources))
             
         # We do this in chunks
         if self._gensize == 0:
@@ -411,7 +412,7 @@ class genmap_gauss:
             print("Generating sources")
         for i, nsrc in enumerate(chunks):
             if verbose and nchunks > 1:
-                print("  Doing chunk %d of %d" % (i+1, nchunks)) 
+                print("  Doing chunk {0:d} of {1:d}".format(i+1, nchunks)) 
                 
                 
             # Generate positions in base image, uniformly distributed
@@ -465,9 +466,10 @@ class genmap_gauss:
         # Now image details -- convolution, instrument noise
         for mapidx in range(self._nbands):
             if verbose:
-                print("Preparing map for wavelength %5.1f um extent: %d x %d" %
-                      (self._wave[mapidx], maps[mapidx].shape[0],
-                       maps[mapidx].shape[1]))
+                msg = "Preparing map for wavelength {0:5.1f} um "+\
+                      "extent: {1:d} x {2:d}"
+                print(msg.format(self._wave[mapidx], maps[mapidx].shape[0],
+                                 maps[mapidx].shape[1]))
                 
             if verbose:
                 print("  Convolving")
@@ -476,8 +478,8 @@ class genmap_gauss:
 
             if int_sigma[mapidx] > 0:
                 if verbose:
-                    print("  Adding instrument noise: %0.4f [Jy]" %
-                          int_sigma[mapidx])
+                    msg = "  Adding instrument noise: {:0.4f} [Jy]"
+                    print(msg.format(int_sigma[mapidx]))
                 maps[mapidx] += np.random.normal(scale=int_sigma[mapidx],
                                                  size=maps[mapidx].shape)
                 

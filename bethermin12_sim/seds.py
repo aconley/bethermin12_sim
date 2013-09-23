@@ -51,13 +51,13 @@ class sed_model:
         if self._zmin > self._zmax:
             self._zmin, self._zmax = self._zmax, self._zmin
         if self._zmin < 0.0:
-            raise ValueError("zmin must be >= 0: %f" % self._zmin)
+            raise ValueError("zmin must be >= 0: {:f}".format(self._zmin))
         if self._Om0 <= 0.0:
-            raise ValueError("Om0 must be positive: %f" % self._Om0)
+            raise ValueError("Om0 must be positive: {:f}".format(self._Om0))
         if self._H0 <= 0.0:
-            raise ValueError("H0 must be positive: %f" % self._H0)
+            raise ValueError("H0 must be positive: {:f}".format(self._H0))
         if self._ninterp <= 0:
-            raise ValueError("Ninterp must be > 0: %d" % self._ninterp)
+            raise ValueError("Ninterp must be > 0: {:d}".format(self._ninterp))
 
         # Set up luminosity distance interpolant.  We actually
         # interpolate log((1+z) / (4 pi d_L^2)) in log(1+z)
@@ -112,7 +112,7 @@ class sed_model:
 
         zval = float(z)
         if zval > self._zmax or zval < self._zmin:
-            raise ValueError("z out of supported range: %f" % zval)
+            raise ValueError("z out of supported range: {:f}".format(zval))
         opz = 1.0 + zval        
         ldfac = 10**log10lir * np.exp(self._dlfac(np.log(opz)))
 
@@ -147,11 +147,11 @@ class sed_model:
                 raise ValueError("log10lir must be scalar if z is")
             zval = float(z)
             if zval > self._zmax:
-                raise ValueError("z %f above supported range: %f" %\
-                                 (zval, self._zmax))   
+                errmsg = "z {0:f} above supported range: {1:f}"
+                raise ValueError(errmsg.format(zval, self._zmax))   
             if zval < self._zmin:
-                raise ValueError("z %f below supported range: %f" %\
-                                 (zval, self._zmin))   
+                errmsg = "z {0:f} below supported range: {1:f}"
+                raise ValueError(errmsg.format(zval, self._zmin))   
             opz = 1.0 + zval
             ldfac = 10**(log10lir + 23.0) * \
                 np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
@@ -190,11 +190,11 @@ class sed_model:
                                      "log10lir values")
 
             if z.max() > self._zmax:
-                raise ValueError("z %f above supported range: %f" %\
-                                 (z.max(), self._zmax))   
+                errmsg = "z {0:f} above supported range: {1:f}"
+                raise ValueError(errmsg.format(z.max(), self._zmax))   
             if z.min() < self._zmin:
-                raise ValueError("z %f below supported range: %f" %\
-                                 (z.min(), self._zmin))   
+                errmsg = "z {0:f} below supported range: {1:f}"
+                raise ValueError(errmsg.format(z.min(), self._zmin))   
             opz = 1.0 + z
             ldfac = 10**(log10lir + 23.0) * \
                 np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy

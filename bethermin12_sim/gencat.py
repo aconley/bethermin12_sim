@@ -140,13 +140,17 @@ class gencat:
         self._H0 = float(H0)
 
         if self._mnUMS <= 0:
-            raise ValueError("mnU_MS0 must be positive, not %f" % self._mnUMS)
+            errstr = "mnU_MS0 must be positive, not {:f}".format(self._mnUMS)
+            raise ValueError(errstr)
         if self._zUMS < 0:
-            raise ValueError("z_UMS must be non-negative, not %f" % self._zUMS)
+            errstr = "z_UMS must be non-negative, not {:f}".format(self._zUMS)
+            raise ValueError(errstr)
         if self._mnUSB <= 0:
-            raise ValueError("mnU_SB0 must be positive, not %f" % self._mnUSB)
+            errstr = "mnU_SB0 must be positive, not {:f}".format(self._mnUSB)
+            raise ValueError()
         if self._zUSB < 0:
-            raise ValueError("z_USB must be non-negative, not %f" % self._zUSB)
+            errstr = "z_USB must be non-negative, not {:f}".format(self._zUSB)
+            raise ValueError(errstr)
 
         self._sch = mass_schecter(log10Mb, alpha, log10Mmin, log10Mmax,
                                   ninterpm)
