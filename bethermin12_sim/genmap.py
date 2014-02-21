@@ -3,8 +3,12 @@ from __future__ import print_function
 import numpy as np
 import math
 import astropy.io.fits as fits
-from astropy.nddata import convolve
-from astropy.nddata.convolution.make_kernel import make_kernel
+
+try:
+    from astropy.convolution import convolve
+    from astropy.convolution import Gaussian2DKernel
+except ImportError:
+    raise Exception("You have an old (pre 0.3) version of astropy")
 
 
 """ Generates simulated maps"""
@@ -12,6 +16,7 @@ from astropy.nddata.convolution.make_kernel import make_kernel
 __all__ = ["genmap_gauss", "get_gauss_beam"]
 
 from .gencat import gencat
+
 
 def get_gauss_beam(fwhm, pixscale, nfwhm=5.0, oversamp=1):
     """ Generate Gaussian kernel
@@ -31,7 +36,7 @@ def get_gauss_beam(fwhm, pixscale, nfwhm=5.0, oversamp=1):
       Odd integer giving the oversampling to use when constructing the
       beam.  The beam is generated in pixscale / oversamp size pixels,
       then rebinned to pixscale.
-    
+
     Notes
     -----
       The beam is normalized by having a value of 1 in the center.
@@ -56,29 +61,18 @@ def get_gauss_beam(fwhm, pixscale, nfwhm=5.0, oversamp=1):
 
     bmsigma = fwhm / math.sqrt(8 * math.log(2))
 
-    if oversamp == 1:
-        # Easy case
-        beam = make_kernel((retext, retext), bmsigma / pixscale, 
-                           'gaussian').astype(np.float32)
-        beam /= beam.max
-    else:
-        genext = retext * oversamp
-        genpixscale = pixscale / oversamp
-        gbeam = make_kernel((genext, genext), bmsigma / genpixscale, 
-                           'gaussian').astype(np.float32)
-        gbeam /= gbeam.max() # Normalize -before- rebinning
-
-        # Rebinning -- tricky stuff!
-        bmview = gbeam.reshape(retext, oversamp, retext, oversamp)
-        beam = bmview.mean(axis=3).mean(axis=1)
-
+    beam = Gaussian2DKernel(bmsigma / pixscale, x_size=retext,
+                            y_size=retext, mode='oversample',
+                            factor=oversample)
+    beam *= 1.0 / beam.array.max()
     return beam
+
 
 class genmap_gauss:
     """ Generates simulated maps from the Bethermin et al. 2012 model
     using a Gaussian beam"""
 
-    def __init__(self, wave=[250.0,350,500], pixsize=[6.0, 8.33333, 12.0],
+    def __init__(self, wave=[250.0, 350, 500], pixsize=[6.0, 8.33333, 12.0],
                  fwhm=[17.6, 23.9, 35.2], nfwhm=5.0, bmoversamp=5,
                  gensize=150000, truthtable=False, log10Mb=11.2,
                  alpha=1.3, log10Mmin=8.5, log10Mmax=12.75, ninterpm=2000,
@@ -86,11 +80,10 @@ class genmap_gauss:
                  gamma_sfmf=0.4, ninterpz=1000, rsb0=0.012, gammasb=1.0,
                  zsb=1.0, logsSFRM0=-10.2, betaMS=-0.2, zevo=2.5,
                  gammams=3.0, bsb=0.6, sigmams=0.15, sigmasb=0.2,
-                 mnU_MS0=4.0, gammaU_MS0=1.3, z_UMS=2.0, mnU_SB0=35.0, 
+                 mnU_MS0=4.0, gammaU_MS0=1.3, z_UMS=2.0, mnU_SB0=35.0,
                  gammaU_SB0=0.4, z_USB=3.1, scatU=0.2, ninterpdl=200):
-        
         """ Initializer.
-        
+
         Parameters
         ----------
         wave: ndarray
@@ -110,7 +103,7 @@ class genmap_gauss:
           In order to try to save memory, sources are added to the maps
           in chunks of this size.  If set to 0, all the sources are
           generated at once.
-        
+
         truthtable: bool
           If set to true, then the truth table is also returned (giving
           the source fluxes and positions).  If this is set, then
@@ -121,7 +114,7 @@ class genmap_gauss:
 
         alpha: float
           Power-law slope of low mass distribution
- 
+
         log10Mmin: float
           Log10 minimum mass to generate, in solar masses
 
@@ -216,24 +209,26 @@ class genmap_gauss:
         if self._wave.min() <= 0:
             raise ValueError("Non-positive wavelengths not supported")
         self._nbands = len(self._wave)
-        
+
         if isinstance(pixsize, Number):
-            self._pixsize = pixsize * np.ones_like(self._wave, dtype=np.float32)
+            self._pixsize = pixsize * np.ones_like(self._wave,
+                                                   dtype=np.float32)
         else:
             if len(pixsize) != self._nbands:
                 if len(pixsize) == 1:
-                    self._pixsize = np.asarray(pixsize[0], dtype=np.float32) *\
+                    self._pixsize = np.asarray(pixsize[0],
+                                               dtype=np.float32) * \
                         np.ones_like(self._wave)
                 else:
                     raise ValueError("Number of pixel sizes doesn't "
                                      "match number of wavelengths")
             else:
-                self._pixsize=  np.asarray(pixsize, dtype=np.float32)
+                self._pixsize = np.asarray(pixsize, dtype=np.float32)
         if self._pixsize.min() <= 0:
             raise ValueError("Invalid (negative) pixel size")
 
         if isinstance(fwhm, Number):
-            self._fwhm =  fwhm * np.ones_like(self._wave)
+            self._fwhm = fwhm * np.ones_like(self._wave)
         else:
             if len(fwhm) != self._nbands:
                 if len(fwhm) == 1:
@@ -243,7 +238,7 @@ class genmap_gauss:
                     raise ValueError("Number of FWHM doesn't match number "
                                      "of wavelengths")
             else:
-                self._fwhm=  np.asarray(fwhm, dtype=np.float32)
+                self._fwhm = np.asarray(fwhm, dtype=np.float32)
         if self._fwhm.min() <= 0:
             raise ValueError("Invalid (negative) FWHM")
         if (self._fwhm / self._pixsize).min() < 1:
@@ -268,15 +263,15 @@ class genmap_gauss:
         if self._bmoversamp < 1:
             raise ValueError("Invalid (<1) beam oversampling")
         if self._bmoversamp % 2 == 0:
-            errstr = "Invalid (even) beam oversampling {:d}".format(self._bmoversamp)
-            raise ValueError(errstr)
-            
+            errstr = "Invalid (even) beam oversampling {:d}"
+            raise ValueError(errstr.format(self._bmoversamp))
+
         # Set up catalog generator
-        self._gencat = gencat(log10Mb, alpha, log10Mmin, log10Mmax, 
-                              ninterpm, zmin, zmax, Om0, H0, phib0, 
-                              gamma_sfmf, ninterpz, rsb0, gammasb, zsb, 
-                              logsSFRM0, betaMS, zevo, gammams, bsb, 
-                              sigmams, sigmasb, mnU_MS0, gammaU_MS0, 
+        self._gencat = gencat(log10Mb, alpha, log10Mmin, log10Mmax,
+                              ninterpm, zmin, zmax, Om0, H0, phib0,
+                              gamma_sfmf, ninterpz, rsb0, gammasb, zsb,
+                              logsSFRM0, betaMS, zevo, gammams, bsb,
+                              sigmams, sigmasb, mnU_MS0, gammaU_MS0,
                               z_UMS, mnU_SB0, gammaU_SB0, z_USB,
                               scatU, ninterpdl)
         self._npersr = self._gencat.npersr
@@ -341,10 +336,10 @@ class genmap_gauss:
           Remember that the returned maps follow astropy.io.fits conventions,
         so the indexing into the maps is [y, x]
         """
-        
+
         if area <= 0.0:
             raise ValueError("Invalid (non-positive) area")
-        
+
         if sigma is None:
             int_sigma = np.zeros(self._nbands, dtype=np.float32)
         elif type(sigma) == list:
@@ -366,7 +361,7 @@ class genmap_gauss:
             else:
                 int_sigma = sigma.astype(np.float32, copy=False)
         else:
-            int_sigma=  float(sigma) * np.ones_like(self._wave)
+            int_sigma = float(sigma) * np.ones_like(self._wave)
 
         if int_sigma.min() < 0:
             raise ValueError("Invalid (negative) instrument sigma")
@@ -383,9 +378,9 @@ class genmap_gauss:
             pixarea = (self._pixsize[i] / 3600.0)**2
             nextent[i] = math.ceil(math.sqrt(area / pixarea))
             truearea[i] = nextent[i]**2 * pixarea
-            maps.append(np.zeros((nextent[i], nextent[i]), 
+            maps.append(np.zeros((nextent[i], nextent[i]),
                                  dtype=np.float32))
-            
+
         # Figure out how many sources to make
         truearea = truearea.mean()
         nsources_base = self._npersr * (math.pi / 180.0)**2 * truearea
@@ -393,7 +388,7 @@ class genmap_gauss:
         if verbose:
             print("True area: {:0.2f} [deg^2]".format(truearea))
             print("Number of sources to generate: {:d}".format(nsources))
-            
+
         # We do this in chunks
         if self._gensize == 0:
             # One big chunk
@@ -405,28 +400,27 @@ class genmap_gauss:
             chunks = self._gensize * np.ones(nchunks, dtype=np.int64)
             chunks[-1] = nsources - (nchunks - 1) * self._gensize
             assert chunks.sum() == nsources
-            
+
         # Source generation loop
         nexgen = float(nextent[0])
         if verbose:
             print("Generating sources")
         for i, nsrc in enumerate(chunks):
             if verbose and nchunks > 1:
-                print("  Doing chunk {0:d} of {1:d}".format(i+1, nchunks)) 
-                
-                
+                print("  Doing chunk {0:d} of {1:d}".format(i+1, nchunks))
+
             # Generate positions in base image, uniformly distributed
             # Note these are floating point
             xpos = nexgen * np.random.rand(nsrc)
             ypos = nexgen * np.random.rand(nsrc)
 
             # Get fluxes (in Jy)
-            cat =  self._gencat.generate(nsrc, wave=self._wave)
+            cat = self._gencat.generate(nsrc, wave=self._wave)
             fluxes = cat[-1].copy()
-                
+
             # Set up truth table if needed
             if self._returntruth:
-                truthtable = {'x': xpos, 'y': ypos, 
+                truthtable = {'x': xpos, 'y': ypos,
                               'z': cat[0], 'log10M': cat[1],
                               'sb': cat[2], 'log10sSFR': cat[3],
                               'log10Lir': cat[4], 'fluxdens': fluxes}
@@ -443,8 +437,8 @@ class genmap_gauss:
             nx, ny = cmap.shape
             np.place(xf, xf > nx-1, nx-1)
             np.place(yf, yf > ny-1, ny-1)
-            for cx, cy, cf in zip(xf, yf, fluxes[:,0]):
-                cmap[cy, cx] += cf # Note transpose
+            for cx, cy, cf in zip(xf, yf, fluxes[:, 0]):
+                cmap[cy, cx] += cf  # Note transpose
 
             # Other bands, with pixel scale adjustment
             for mapidx in range(1, self._nbands):
@@ -455,9 +449,9 @@ class genmap_gauss:
                 nx, ny = cmap.shape
                 np.place(xf, xf > nx-1, nx-1)
                 np.place(yf, yf > ny-1, ny-1)
-                for cx, cy, cf in zip(xf, yf, fluxes[:,mapidx]):
-                    cmap[cy, cx] += cf # Note transpose
-                    
+                for cx, cy, cf in zip(xf, yf, fluxes[:, mapidx]):
+                    cmap[cy, cx] += cf  # Note transpose
+
             if not self._returntruth:
                 del fluxes, xpos, ypos, xf, yf
             else:
@@ -466,13 +460,12 @@ class genmap_gauss:
         # Now image details -- convolution, instrument noise
         for mapidx in range(self._nbands):
             if verbose:
-                msg = "Preparing map for wavelength {0:5.1f} um "+\
+                msg = "Preparing map for wavelength {0:5.1f} um "\
                       "extent: {1:d} x {2:d}"
                 print(msg.format(self._wave[mapidx], maps[mapidx].shape[0],
                                  maps[mapidx].shape[1]))
-                
-            if verbose:
                 print("  Convolving")
+
             beam = self.get_gauss_beam(mapidx)
             maps[mapidx] = convolve(maps[mapidx], beam, boundary='wrap')
 
@@ -482,9 +475,8 @@ class genmap_gauss:
                     print(msg.format(int_sigma[mapidx]))
                 maps[mapidx] += np.random.normal(scale=int_sigma[mapidx],
                                                  size=maps[mapidx].shape)
-                
+
             if self._returntruth:
                 maps.append(truthtable)
 
         return maps
-

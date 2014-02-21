@@ -5,6 +5,7 @@ import math
 
 __all__ = ["sed_model"]
 
+
 class sed_model:
     """ Gets SEDs and fluxes from Magdis template models"""
 
@@ -31,7 +32,6 @@ class sed_model:
 
         """
 
-
         from astropy.cosmology import FlatLambdaCDM
         from astropy.units import Quantity
         import astropy.io.fits as fits
@@ -44,7 +44,6 @@ class sed_model:
         self._Om0 = float(Om0)
         self._H0 = float(H0)
         self._ninterp = int(ninterp)
-        
 
         if self._zmin == self._zmax:
             raise ValueError("No range between zmin and zmax")
@@ -81,7 +80,7 @@ class sed_model:
         arg = np.argsort(self._sbumean)
         self._sbumean = self._sbumean[arg]
         self._sbrange = np.array([self._sbumean[0], self._sbumean[-1]])
-        self._sbseds = dat['SEDS'][0,:,:].transpose()[arg,:] # umean by lambda
+        self._sbseds = dat['SEDS'][0, :, :].transpose()[arg, :]
         self._sbinterp = rbs(self._sbumean, self._sblam, self._sbseds,
                              kx=1, ky=1)
 
@@ -93,8 +92,8 @@ class sed_model:
         self._msumean = dat['UMEAN'][0]
         arg = np.argsort(self._msumean)
         self._msumean = self._msumean[arg]
-        self._msrange = np.array([self._msumean[0],self._msumean[-1]])
-        self._msseds = dat['SEDS'][0,:,:].transpose()[arg,:] # umean by lambda
+        self._msrange = np.array([self._msumean[0], self._msumean[-1]])
+        self._msseds = dat['SEDS'][0, :, :].transpose()[arg, :]
         self._msinterp = []
         self._msinterp = rbs(self._msumean, self._mslam, self._msseds,
                              kx=1, ky=1)
@@ -113,26 +112,26 @@ class sed_model:
         zval = float(z)
         if zval > self._zmax or zval < self._zmin:
             raise ValueError("z out of supported range: {:f}".format(zval))
-        opz = 1.0 + zval        
+        opz = 1.0 + zval
         ldfac = 10**log10lir * np.exp(self._dlfac(np.log(opz)))
 
         if is_starburst:
-            return (self._sblam / opz, 
+            return (self._sblam / opz,
                     ldfac * self._intsed1(U, self._sbumean, self._sbseds))
         else:
-            return (self._mslam / opz, 
+            return (self._mslam / opz,
                     ldfac * self._intsed1(U, self._msumean, self._msseds))
 
     def _intsed1(self, U, uarr, seds):
         # uarr[idx] <= U < uarr[idx+1]
-        idx = np.searchsorted(uarr, U, side='right') 
+        idx = np.searchsorted(uarr, U, side='right')
         if idx == 0:
             return seds[0, :]
         elif idx == len(uarr):
-            return seds[-1,:]
+            return seds[-1, :]
         wt2 = (U - uarr[idx-1])/(uarr[idx] - uarr[idx-1])
         wt1 = 1.0 - wt2
-        return wt1 * seds[idx-1,:] + wt2 * seds[idx,:]
+        return wt1 * seds[idx-1, :] + wt2 * seds[idx, :]
 
     def get_fluxes(self, wave, z, U, is_starburst, log10lir=0.0):
         """ Gets the flux density at the observer frame wavelengths wave
@@ -148,14 +147,14 @@ class sed_model:
             zval = float(z)
             if zval > self._zmax:
                 errmsg = "z {0:f} above supported range: {1:f}"
-                raise ValueError(errmsg.format(zval, self._zmax))   
+                raise ValueError(errmsg.format(zval, self._zmax))
             if zval < self._zmin:
                 errmsg = "z {0:f} below supported range: {1:f}"
-                raise ValueError(errmsg.format(zval, self._zmin))   
+                raise ValueError(errmsg.format(zval, self._zmin))
             opz = 1.0 + zval
             ldfac = 10**(log10lir + 23.0) * \
-                np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
-            
+                np.exp(self._dlfac(np.log(opz)))  # 1e23 is to Jy
+
             if is_starburst:
                 rng = self._sbrange
                 interp = self._sbinterp
@@ -167,7 +166,7 @@ class sed_model:
             elif U > rng[1]:
                 U = rng[1]
             if np.isscalar(wave):
-                return  ldfac * interp(U, wave / opz).flatten()
+                return ldfac * interp(U, wave / opz).flatten()
             else:
                 return ldfac * interp(U, np.asarray(wave) / opz).flatten()
         else:
@@ -191,13 +190,13 @@ class sed_model:
 
             if z.max() > self._zmax:
                 errmsg = "z {0:f} above supported range: {1:f}"
-                raise ValueError(errmsg.format(z.max(), self._zmax))   
+                raise ValueError(errmsg.format(z.max(), self._zmax))
             if z.min() < self._zmin:
                 errmsg = "z {0:f} below supported range: {1:f}"
-                raise ValueError(errmsg.format(z.min(), self._zmin))   
+                raise ValueError(errmsg.format(z.min(), self._zmin))
             opz = 1.0 + z
             ldfac = 10**(log10lir + 23.0) * \
-                np.exp(self._dlfac(np.log(opz))) # 1e23 is to Jy
+                np.exp(self._dlfac(np.log(opz)))  # 1e23 is to Jy
 
             if is_starburst:
                 rng = self._sbrange
@@ -207,7 +206,7 @@ class sed_model:
                 interp = self._msinterp
             np.copyto(U, rng[0], where=(U < rng[0]))
             np.copyto(U, rng[1], where=(U > rng[1]))
-            
+
             if np.isscalar(wave):
                 retarr = np.empty_like(z)
                 for idx in range(nz):
@@ -219,4 +218,3 @@ class sed_model:
                     retarr[idx, :] = ldfac[idx] *\
                         interp(U[idx], wave / opz[idx]).flatten()
             return retarr
-        

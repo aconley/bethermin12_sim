@@ -5,6 +5,7 @@ import math
 
 __all__ = ["mass_schecter"]
 
+
 class mass_schecter:
     """ A class for generating samples from a Schecter function.
 
@@ -24,7 +25,7 @@ class mass_schecter:
 
         alpha: float
           Power-law slope of low mass distribution
- 
+
         log10Mmin: float
           Log10 minimum mass to generate, in solar masses
 
@@ -34,7 +35,6 @@ class mass_schecter:
         ninterp: float
           Number of interpolation samples to use
         """
-
 
         from scipy.interpolate import interp1d
         from scipy.integrate import trapz
@@ -63,8 +63,8 @@ class mass_schecter:
 
         # Now form inverse cumulative array we need to generate samples
         cumsum = val.cumsum()
-        cumsum -= cumsum[0] # So that 0 corresponds to the bottom
-        cumsum /= cumsum[-1] # Normalization -> 0-1 is full range
+        cumsum -= cumsum[0]  # So that 0 corresponds to the bottom
+        cumsum /= cumsum[-1]  # Normalization -> 0-1 is full range
         self._interpolant = interp1d(cumsum, logM, kind='linear')
 
     def __call__(self, log10M):
@@ -114,7 +114,7 @@ class mass_schecter:
     @property
     def ninterp(self):
         return self._ninterp
-        
+
     @property
     def totalval(self):
         return self._totval

@@ -8,6 +8,7 @@ This contains the comoving volume element and the phi_b(z) function.
 
 __all__ = ["zdist"]
 
+
 class zdist:
     """ Volume element and z distribution"""
 
@@ -19,7 +20,7 @@ class zdist:
         ----------
         zmin : float
           Minimum redshift
-        
+
         zmax: float
           Maximum redshift
 
@@ -28,7 +29,7 @@ class zdist:
 
         H0: float
           Hubble constant in km / s / Mpc
-   
+
         phib0: float
           log 10 number density at SFMF break in comoving Mpc^-3
 
@@ -68,23 +69,23 @@ class zdist:
         self._zvals = np.linspace(self._zmin, self._zmax, self._ninterp)
 
         # Cosmology bit
-        c_over_H0 = 299792.458 / self._H0 # in Mpc
+        c_over_H0 = 299792.458 / self._H0  # in Mpc
         cos = FlatLambdaCDM(H0=self._H0, Om0=self._Om0)
 
         # in comoving Mpc^3
         ang_diam_dist = cos.angular_diameter_distance(self._zvals)
         if isinstance(ang_diam_dist, Quantity):
             ang_diam_dist = ang_diam_dist.value
-        self._dVdzdOmega = c_over_H0 * (1.0 + self._zvals)**2 *\
-            ang_diam_dist**2 / np.sqrt((1.0 + self._zvals)**3 *\
-                                           self._Om0 + (1.0 - self._Om0))
-        
+        self._dVdzdOmega = c_over_H0 * (1.0 + self._zvals)**2 * \
+            ang_diam_dist**2 / np.sqrt((1.0 + self._zvals)**3 *
+                                       self._Om0 + (1.0 - self._Om0))
+
         # Schecter evolution bit
         phi = self._phib0 * np.ones(self._ninterp, dtype=np.float64)
         wgt1 = np.nonzero(self._zvals > 1.0)[0]
         if len(wgt1) > 0:
             phi[wgt1] += self._gamma_sfmf * (1.0 - self._zvals[wgt1])
-        
+
         # Combined
         comb = 10**phi * self._dVdzdOmega
 
@@ -93,8 +94,8 @@ class zdist:
 
         # Form inverse cumulative array needed to generate samples
         cumsum = comb.cumsum()
-        cumsum -= cumsum[0] # So that 0 corresponds to the bottom
-        cumsum /= cumsum[-1] # Normalization -> 0-1 is full range
+        cumsum -= cumsum[0]  # So that 0 corresponds to the bottom
+        cumsum /= cumsum[-1]  # Normalization -> 0-1 is full range
         self._interpolant = interp1d(cumsum, self._zvals, kind='linear')
 
     def generate(self, ngen):
@@ -116,7 +117,7 @@ class zdist:
     @property
     def zmin(self):
         return self._zmin
-    
+
     @property
     def zmax(self):
         return self._zmax
