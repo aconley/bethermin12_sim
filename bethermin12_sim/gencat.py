@@ -231,6 +231,12 @@ class gencat:
             # only applies to SBs, not MSs
             log10lir = (log10mass + log10sSFR - kfac).astype(np.float32)
 
+            # Deal with extinction effects on L_IR
+            # coeff values are from eq 7 of B12 * 0.4 (from eq 8)
+            pow_r1500 = 10**(1.628 * log10mass - 15.728)
+            fsf = pow_r1500 / (1.0 + pow_r1500)
+            log10lir += np.log10(fsf).astype(np.float32)
+
             # Do starbursts
             wsb = np.nonzero(is_starburst)[0]
             nsb = len(wsb)
@@ -243,12 +249,6 @@ class gencat:
                 # Add scatter to U
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nsb))
-
-                # Deal with extinction effects on L_IR
-                # coeff values are from eq 7 of B12 * 0.4 (from eq 8)
-                pow_r1500 = 10**(1.628 * log10mass[wsb] - 15.728)
-                fsf = pow_r1500 / (1.0 + pow_r1500)
-                log10lir[wsb] += np.log10(fsf).astype(np.float32)
 
                 fluxes[wsb, :] = self._ms.get_fluxes(wave, z[wsb], u, True,
                                                      log10lir=log10lir[wsb])
