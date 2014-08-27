@@ -189,10 +189,12 @@ class gencat:
             rsb[w] = (1.0 + z[w])**self._gammasb
         rsb *= self._rsb0
         is_starburst = np.zeros(ngen, dtype=np.uint8)
-        w = np.nonzero(np.random.rand(ngen) < rsb / (rsb + 1.0))[0]
+        prob_starburst = self._sigma_sb * rsb /\
+                         (self._sigma_ms + self._sigma_sb * rsb)
+        w = np.nonzero(np.random.rand(ngen) < prob_starburst)[0]
         if len(w) > 0:
             is_starburst[w] = 1
-        del rsb
+        del rsb, prob_starburst, w
 
         # Figure out sSFR for each source.  These are gaussian -- just
         # times different numbers and means depending on whether they
