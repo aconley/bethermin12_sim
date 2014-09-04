@@ -241,7 +241,7 @@ class gencat:
             if nsb > 0:
                 # Get the U (mean radiation field), eq 6 in B12
                 u = self._mnUSB * \
-                    (1.0 + np.minimum(z[wsb], self._zUSB)**self._gammaUSB
+                    (1.0 + np.minimum(z[wsb], self._zUSB))**self._gammaUSB
                 # Add scatter to U
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nsb))
@@ -256,7 +256,7 @@ class gencat:
             nms = len(wms)
             if nms > 0:
                 u = self._mnUMS * \
-                     (1.0 + np.minimum(z[wms], self._zUMS)**self._gammaUMS
+                     (1.0 + np.minimum(z[wms], self._zUMS))**self._gammaUMS
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nms))
                 fluxes[wms, :] = \
