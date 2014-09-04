@@ -130,7 +130,7 @@ class gencat:
         self._sigmams = float(sigmams)
         self._sigmasb = float(sigmasb)
         self._scatU = float(scatU)  # dex
-        self._scatUe = math.log(10.0) * self._scatU  # param for lognormal
+        self._scatUe = math.log(10.0) * self._scatU  # log_10 -> ln
         self._mnUMS = float(mnU_MS0)
         self._gammaUMS = float(gammaU_MS0)
         self._zUMS = float(z_UMS)
@@ -157,8 +157,9 @@ class gencat:
                                   ninterpm)
         self._zdist = zdist(self._zmin, self._zmax, self._Om0, self._H0,
                             phib0, gamma_sfmf, ninterpz)
-        self._ms = sed_model(zmin=self._zmin, zmax=self._zmax, Om0=self._Om0,
-                             H0=self._H0, ninterp=ninterpdl)
+        self._sedmodel = sed_model(zmin=self._zmin, zmax=self._zmax, 
+                                   Om0=self._Om0, H0=self._H0, 
+                                   ninterp=ninterpdl)
 
         # Set number per sr
         self._npersr = self._zdist.dVPhidzdOmega * self._sch.dNdV
@@ -238,31 +239,29 @@ class gencat:
             wsb = np.nonzero(is_starburst)[0]
             nsb = len(wsb)
             if nsb > 0:
-                # Get the U (mean radiation field)
-                u = 1.0 + z[wsb]
-                np.copyto(u, 1. + self._zUSB, where=u > 1.0+self._zUSB)
-                u **= self._gammaUSB
-                u *= self._mnUSB
+                # Get the U (mean radiation field), eq 6 in B12
+                u = self._mnUSB * \
+                    (1.0 + np.minimum(z[wsb], self._zUSB)**self._gammaUSB
                 # Add scatter to U
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nsb))
-
-                fluxes[wsb, :] = self._ms.get_fluxes(wave, z[wsb], u, True,
-                                                     log10lir=log10lir[wsb])
+                # Actual fluxes
+                fluxes[wsb, :] = \
+                     self._sedmodel.get_fluxes(wave, z[wsb], u, True,
+                                               log10lir=log10lir[wsb])
             del wsb
 
             # Do MS
             wms = np.nonzero(~is_starburst)[0]
             nms = len(wms)
             if nms > 0:
-                u = 1.0 + z[wms]
-                np.copyto(u, 1 + self._zUMS, where=u > 1.0+self._zUMS)
-                u **= self._gammaUMS
-                u *= self._mnUMS
+                u = self._mnUMS * \
+                     (1.0 + np.minimum(z[wms], self._zUMS)**self._gammaUMS
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nms))
-                fluxes[wms, :] = self._ms.get_fluxes(wave, z[wms], u, False,
-                                                     log10lir=log10lir[wms])
+                fluxes[wms, :] = \
+                      self._sedmodel.get_fluxes(wave, z[wms], u, False,
+                                                log10lir=log10lir[wms])
             del wms
 
             return (z, log10mass, is_starburst, log10sSFR, log10lir, fluxes)
