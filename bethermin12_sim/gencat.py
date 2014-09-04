@@ -188,13 +188,10 @@ class gencat:
         if len(w) > 0:
             rsb[w] = (1.0 + z[w])**self._gammasb
         rsb *= self._rsb0
-        is_starburst = np.zeros(ngen, dtype=np.uint8)
         prob_starburst = self._sigma_sb * rsb /\
                          (self._sigma_ms + self._sigma_sb * rsb)
-        w = np.nonzero(np.random.rand(ngen) < prob_starburst)[0]
-        if len(w) > 0:
-            is_starburst[w] = 1
-        del rsb, prob_starburst, w
+        is_starburst = np.random.rand(ngen) < prob_starburst
+        del rsb, prob_starburst
 
         # Figure out sSFR for each source.  These are gaussian -- just
         # times different numbers and means depending on whether they
@@ -243,7 +240,7 @@ class gencat:
             if nsb > 0:
                 # Get the U (mean radiation field)
                 u = 1.0 + z[wsb]
-                np.copyto(u, self._zUSB, where=u > 1.0+self._zUSB)
+                np.copyto(u, 1. + self._zUSB, where=u > 1.0+self._zUSB)
                 u **= self._gammaUSB
                 u *= self._mnUSB
                 # Add scatter to U
@@ -255,13 +252,13 @@ class gencat:
             del wsb
 
             # Do MS
-            wms = np.nonzero(~is_starburst)[0]  # ~ is bitwise negation
+            wms = np.nonzero(~is_starburst)[0]
             nms = len(wms)
             if nms > 0:
                 u = 1.0 + z[wms]
-                np.copyto(u, self._zUMS, where=u > 1.0+self._zUMS)
+                np.copyto(u, 1 + self._zUMS, where=u > 1.0+self._zUMS)
                 u **= self._gammaUMS
-                u *= self._mnUSB
+                u *= self._mnUMS
                 if self._scatU > 0.0:
                     u *= np.random.lognormal(sigma=self._scatUe, size=(nms))
                 fluxes[wms, :] = self._ms.get_fluxes(wave, z[wms], u, False,
