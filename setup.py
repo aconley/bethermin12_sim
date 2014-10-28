@@ -8,7 +8,7 @@ if (major < 3) and (minor1 < 7):
 
 setup(
     name="bethermin12_sim",
-    version="0.2.3",
+    version="0.2.4",
     author="Alexander Conley",
     author_email="alexander.conley@colorado.edu",
     packages=["bethermin12_sim"],
