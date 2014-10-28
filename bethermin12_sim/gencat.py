@@ -189,8 +189,8 @@ class gencat:
         if len(w) > 0:
             rsb[w] = (1.0 + z[w])**self._gammasb
         rsb *= self._rsb0
-        prob_starburst = self._sigma_sb * rsb /\
-                         (self._sigma_ms + self._sigma_sb * rsb)
+        prob_starburst = self._sigmasb * rsb /\
+                         (self._sigmams + self._sigmasb * rsb)
         is_starburst = np.random.rand(ngen) < prob_starburst
         del rsb, prob_starburst
 
